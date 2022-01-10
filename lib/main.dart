@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const MyApp());
@@ -49,8 +51,10 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  static const platform = MethodChannel('samples.flutter.dev/battery');
 
-  void _incrementCounter() {
+  void _incrementCounter() async {
+    var status = await Permission.microphone.request();
     setState(() {
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
@@ -59,6 +63,11 @@ class _MyHomePageState extends State<MyHomePage> {
       // called again, and so nothing would appear to happen.
       _counter++;
     });
+    if (_counter % 2 == 1) {
+      platform.invokeMethod("startRecord");
+    } else {
+      platform.invokeMethod("stopRecord");
+    }
   }
 
   @override
