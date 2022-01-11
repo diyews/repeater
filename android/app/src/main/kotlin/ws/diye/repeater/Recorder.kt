@@ -4,18 +4,23 @@ import android.media.AudioAttributes
 import android.media.MediaDataSource
 import android.media.MediaPlayer
 import android.media.MediaRecorder
+import android.os.Handler
+import android.os.Looper
 
 import android.os.ParcelFileDescriptor
+import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 
 
-class Recorder {
-    val running = false
-    var recorderRunner: RecorderRunner = RecorderRunner(::bc)
-    private val player: MediaPlayer = MediaPlayer()
+class Recorder constructor(private val methodChannel: MethodChannel) {
+    var running = false
+    var isPrepared = false
+    private lateinit var recorderRunner: RecorderRunner
+    val player: MediaPlayer = MediaPlayer()
 
     fun start() {
+        recorderRunner = RecorderRunner(::bc)
         recorderRunner.start()
     }
 
@@ -28,19 +33,32 @@ class Recorder {
     }
 
     private fun bc(buffer: ByteDataSource) {
+        isPrepared = false
         player.reset()
         player.setDataSource(buffer)
         player.prepare()
+        isPrepared = true
+        sendDuration()
         player.start()
     }
 
-    init {
+    private fun sendDuration() {
+        Handler(Looper.getMainLooper()).post {
+            methodChannel.invokeMethod("updateDuration", player.duration)
+        }
+    }
+
+    private fun setupPlayer() {
         player.setAudioAttributes(
                 AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_MEDIA)
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build()
         )
+    }
+
+    init {
+        setupPlayer()
     }
 }
 
@@ -66,7 +84,6 @@ class RecorderRunner constructor(
         recorder.prepare()
 
         recorder.start()
-
 
         var read = 0
         val data = ByteArray(16384)
