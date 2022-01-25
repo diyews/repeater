@@ -78,9 +78,11 @@ class RecorderRunner constructor(
         val inputStream: InputStream = ParcelFileDescriptor.AutoCloseInputStream(parcelRead)
 
         val recorder = MediaRecorder()
+        recorder.setAudioSamplingRate(192000)
+        recorder.setAudioEncodingBitRate(192000)
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB)
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+        recorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS)
+        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
         recorder.setOutputFile(parcelWrite.fileDescriptor)
         recorder.prepare()
 
