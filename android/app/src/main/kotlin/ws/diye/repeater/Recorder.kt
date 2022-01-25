@@ -20,6 +20,7 @@ class Recorder constructor(private val methodChannel: MethodChannel) {
     val player: MediaPlayer = MediaPlayer()
 
     fun start() {
+        if (isPrepared) player.stop()
         recorderRunner = RecorderRunner(::bc)
         recorderRunner.start()
     }
