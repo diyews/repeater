@@ -3,6 +3,7 @@ import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:repeater/platform.dart';
 
 class DurationWithSlider extends StatefulWidget {
   const DurationWithSlider({Key? key, required}) : super(key: key);
@@ -26,7 +27,7 @@ class _DurationWithSliderState extends State<DurationWithSlider> {
   void initState() {
     super.initState();
 
-    platform.setMethodCallHandler((call) async {
+    registerPlatformListener((call) async {
       switch (call.method) {
         case 'updateDuration':
           final int v = call.arguments;

@@ -37,6 +37,8 @@ dependencies:
 
   permission_handler: ^8.3.0
 
+  audio_wave: ^0.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

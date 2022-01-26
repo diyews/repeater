@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:repeater/platform.dart';
+import 'package:repeater/record_wave.dart';
 
 import 'duration_with_slider.dart';
 
@@ -50,6 +52,8 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
 
     Permission.microphone.request();
+
+    setupPlatformMethodChannel();
   }
 
   @override
@@ -67,6 +71,11 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Stack(
         children: [
+          const Center(
+              child: Padding(
+            padding: EdgeInsets.only(bottom: 200),
+            child: RecordWave(),
+          )),
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

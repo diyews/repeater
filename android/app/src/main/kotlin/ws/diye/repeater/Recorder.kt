@@ -33,19 +33,26 @@ class Recorder constructor(private val methodChannel: MethodChannel) {
         player.start()
     }
 
-    private fun bc(buffer: ByteDataSource) {
+    private fun bc(buffer: ByteDataSource, amplitudeArray: IntArray) {
         isPrepared = false
         player.reset()
         player.setDataSource(buffer)
         player.prepare()
         isPrepared = true
         sendDuration()
+        sendAmplitude(amplitudeArray)
         player.start()
     }
 
     private fun sendDuration() {
         Handler(Looper.getMainLooper()).post {
             methodChannel.invokeMethod("updateDuration", player.duration)
+        }
+    }
+
+    private fun sendAmplitude(amplitudeArray: IntArray) {
+        Handler(Looper.getMainLooper()).post {
+            methodChannel.invokeMethod("updateAmplitude", amplitudeArray)
         }
     }
 
@@ -64,7 +71,7 @@ class Recorder constructor(private val methodChannel: MethodChannel) {
 }
 
 class RecorderRunner constructor(
-        private val byteDataCallback: (buffer: ByteDataSource) -> Unit
+        private val byteDataCallback: (buffer: ByteDataSource, amplitudeArray: IntArray) -> Unit
 ): Thread() {
     override fun run() {
         // Byte array for audio record
@@ -90,19 +97,22 @@ class RecorderRunner constructor(
 
         var read = 0
         val data = ByteArray(16384)
-
+        val amplitudeArray = mutableListOf<Int>()
+        val startTimestamp = System.currentTimeMillis()
 
         while (inputStream.read(data, 0, data.size).also({ read = it }) != -1) {
             if (isInterrupted) {
-                break;
+                break
             }
+            val currentPos = (System.currentTimeMillis() - startTimestamp).toInt()
+            amplitudeArray.addAll(listOf(currentPos, recorder.maxAmplitude))
             byteArrayOutputStream.write(data, 0, read)
         }
 
         byteArrayOutputStream.flush()
         val byteDataSource = ByteDataSource(byteArrayOutputStream.toByteArray())
         recorder.release()
-        byteDataCallback(byteDataSource)
+        byteDataCallback(byteDataSource, amplitudeArray.toIntArray())
     }
 }
 
