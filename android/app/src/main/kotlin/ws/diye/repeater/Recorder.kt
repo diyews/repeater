@@ -1,5 +1,6 @@
 package ws.diye.repeater
 
+import android.content.SharedPreferences
 import android.media.AudioAttributes
 import android.media.MediaDataSource
 import android.media.MediaPlayer
@@ -13,15 +14,16 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 
 
-class Recorder constructor(private val methodChannel: MethodChannel) {
+class Recorder constructor(private val methodChannel: MethodChannel, private val sharedPreferences: SharedPreferences) {
     var running = false
     var isPrepared = false
     private lateinit var recorderRunner: RecorderRunner
     val player: MediaPlayer = MediaPlayer()
+    private var encoderMap: Map<String, Int>
 
     fun start() {
         if (isPrepared) player.stop()
-        recorderRunner = RecorderRunner(::bc)
+        recorderRunner = RecorderRunner(::bc, encoderMap)
         recorderRunner.start()
     }
 
@@ -65,13 +67,53 @@ class Recorder constructor(private val methodChannel: MethodChannel) {
         )
     }
 
+    fun getRecordEncoder(): Int {
+        return sharedPreferences.getInt("audioEncoder", -1)
+    }
+
+    fun setRecordEncoder(encoder: Int): Boolean {
+        when(encoder) {
+            MediaRecorder.AudioEncoder.AAC -> {
+                with(sharedPreferences.edit()) {
+                    putInt("outputFormat", MediaRecorder.OutputFormat.AAC_ADTS)
+                    putInt("audioEncoder", MediaRecorder.AudioEncoder.AAC)
+                    return commit()
+                }
+            }
+            MediaRecorder.AudioEncoder.AMR_NB -> {
+                with(sharedPreferences.edit()) {
+                    putInt("outputFormat", MediaRecorder.OutputFormat.AMR_NB)
+                    putInt("audioEncoder", MediaRecorder.AudioEncoder.AMR_NB)
+                    return commit()
+                }
+            }
+            else -> {
+                return false
+            }
+        }
+    }
+
     init {
         setupPlayer()
+
+        if (sharedPreferences.getInt("outputFormat", -1) == -1) {
+            with(sharedPreferences.edit()) {
+                putInt("outputFormat", MediaRecorder.OutputFormat.AAC_ADTS)
+                putInt("audioEncoder", MediaRecorder.AudioEncoder.AAC)
+                apply()
+            }
+        }
+
+        encoderMap = mapOf(
+            "outputFormat" to sharedPreferences.getInt("outputFormat", 0),
+            "audioEncoder" to sharedPreferences.getInt("audioEncoder", 0)
+        )
     }
 }
 
 class RecorderRunner constructor(
-        private val byteDataCallback: (buffer: ByteDataSource, amplitudeArray: IntArray) -> Unit
+        private val byteDataCallback: (buffer: ByteDataSource, amplitudeArray: IntArray) -> Unit,
+        private val encoderMap: Map<String, Int>
 ): Thread() {
     override fun run() {
         // Byte array for audio record
@@ -88,8 +130,8 @@ class RecorderRunner constructor(
         recorder.setAudioSamplingRate(192000)
         recorder.setAudioEncodingBitRate(192000)
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS)
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+        recorder.setOutputFormat(encoderMap["outputFormat"]!!)
+        recorder.setAudioEncoder(encoderMap["audioEncoder"]!!)
         recorder.setOutputFile(parcelWrite.fileDescriptor)
         recorder.prepare()
 

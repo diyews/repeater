@@ -1,3 +1,5 @@
+import 'dart:io' show exit;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -56,6 +58,15 @@ class _MyHomePageState extends State<MyHomePage> {
     setupPlatformMethodChannel();
   }
 
+  showRecordEncoderDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return const _RecordEncoderDialog();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,10 +74,17 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
         actions: [
           IconButton(
-              onPressed: () {
-                platform.invokeMethod("replay");
-              },
-              icon: const Icon(Icons.refresh)),
+            onPressed: () {
+              showRecordEncoderDialog();
+            },
+            icon: const Icon(Icons.science_outlined),
+          ),
+          IconButton(
+            onPressed: () {
+              platform.invokeMethod("replay");
+            },
+            icon: const Icon(Icons.refresh),
+          ),
         ],
       ),
       body: Stack(
@@ -137,6 +155,87 @@ class _PlayStopState extends State<_PlayStop> {
           shape: const CircleBorder(),
         ),
       ),
+    );
+  }
+}
+
+class _RecordEncoderDialog extends StatefulWidget {
+  const _RecordEncoderDialog({Key? key}) : super(key: key);
+
+  @override
+  _RecordEncoderDialogState createState() => _RecordEncoderDialogState();
+}
+
+class _RecordEncoderDialogState extends State<_RecordEncoderDialog> {
+  static const platform = MethodChannel('ws.diye/repeater');
+
+  int encoder = 0;
+  late Future<int> encoderFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    encoderFuture =
+        platform.invokeMethod<int>('getRecordEncoder').then((value) {
+      encoder = value!;
+      return value;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Encoder'),
+      contentPadding: const EdgeInsets.all(12),
+      content: FutureBuilder(
+          future: encoderFuture,
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    title: const Text('AAC'),
+                    leading: Radio<int>(
+                      value: 3,
+                      groupValue: encoder,
+                      onChanged: (int? value) {
+                        setState(() {
+                          encoder = value!;
+                        });
+                      },
+                    ),
+                  ),
+                  ListTile(
+                    title: const Text('AMR_NB'),
+                    leading: Radio<int>(
+                      value: 1,
+                      groupValue: encoder,
+                      onChanged: (int? value) {
+                        setState(() {
+                          encoder = value!;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              );
+            } else {
+              return Container();
+            }
+          }),
+      actions: [
+        ElevatedButton(
+          onPressed: () {
+            platform.invokeMethod(
+                'setRecordEncoder', {'encoder': encoder}).then((value) {
+              exit(0);
+            });
+          },
+          child: const Text('OK'),
+        ),
+      ],
     );
   }
 }
