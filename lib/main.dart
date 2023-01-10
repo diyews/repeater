@@ -89,11 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Stack(
         children: [
-          const Center(
-              child: Padding(
-            padding: EdgeInsets.only(bottom: 200),
-            child: RecordWave(),
-          )),
+          const Center(child: RecordWave()),
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

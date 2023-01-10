@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:audio_wave/audio_wave.dart';
@@ -53,21 +54,35 @@ class _RecordWaveState extends State<RecordWave> {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
+      const minHeight = 120;
+      const maxHeight = 160;
+      final calcHeight = waveList.isNotEmpty ? waveList.reduce(max) / 250 : 0;
+      double waveHeight = min(calcHeight, maxHeight).toDouble();
+      waveHeight = max(waveHeight, minHeight).toDouble();
       return waveList.isNotEmpty
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: AudioWave(
-                height: 100,
-                width: constraints.maxWidth - 36,
-                spacing: 0,
-                animationLoop: 1,
-                animation: false,
-                bars: [
-                  for (var i in waveList)
-                    AudioWaveBar(
-                        height: i / 500, color: Colors.blue, radius: 0.8),
-                ],
-              ),
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('$calcHeight'),
+                Container(
+                  padding: EdgeInsets.fromLTRB(18, 0, 18, 180 + waveHeight),
+                  child: AudioWave(
+                    height: waveHeight,
+                    width: constraints.maxWidth - 36,
+                    spacing: 0,
+                    animationLoop: 1,
+                    animation: false,
+                    bars: [
+                      for (var i in waveList)
+                        AudioWaveBar(
+                          height: min(i / 250, waveHeight),
+                          color: Colors.blue,
+                          radius: 0.8,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             )
           : Container();
     });
